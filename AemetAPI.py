@@ -6,40 +6,33 @@ class Base:
 
 	def __init__(self, url):
 		self.rss = ''
-		self.__url = url
-		#self.__codigo_postal = ''
-		self.actualizado = ''
-		self.__nombre = ''
+		self.__url = url		
+		self.__fecha_de_actualizacion = ''
+		self.__localidad = ''
 		self.__provincia = ''
+
 		self.precipitacion = []
 		self.cota_nieve = []
 		self.estado_cielo = []
 		self.viento = []
 
-		self.__cargar_xml()
+		self.__load_xml()
 
-	def __cargar_xml(self):
+	def __load_xml(self):
 		self.rss = parse(urllib.urlopen(self.__url)).getroot()
 
-		self.__cargar_actualizado()
-		self.__cargar_localizacion()
+		self.__load_datos_base()		
 
-	def __cargar_actualizado(self):
-		for element in self.rss.findall('elaborado'):
-			self.__actualizado = element.text
+	def __load_datos_base(self):
+		self.__fecha_de_actualizacion = self.rss.find('elaborado').text
+		self.__localidad = self.rss.find('nombre').text
+		self.__provincia = self.rss.find('provincia').text
 
-	def __cargar_localizacion(self):
-		for element in self.rss.findall('nombre'):
-			self.__nombre = element.text
+	def get_fecha_actualizacion(self):
+		return self.__fecha_de_actualizacion
 
-		for element in self.rss.findall('provincia'):
-			self.__provincia = element.text
-
-	def get_actualizado(self):
-		return self.__actualizado
-
-	def get_nombre(self):
-		return self.__nombre
+	def get_localidad(self):
+		return self.__localidad
 
 	def get_provincia(self):
 		return self.__provincia
@@ -49,6 +42,11 @@ class Localidad(Base):
 	def __init__(self, codigo_postal):
 		url = 'http://www.aemet.es/xml/municipios/localidad_' + codigo_postal + '.xml'
 		Base.__init__(self, url)
+
+	def a(self):
+		a = '2013-09-30'
+
+		return list(self.rss.find("prediccion/dia[@fecha='" + a + "']"))
 
 
 	def __obtener_primer_dia(self):
@@ -91,7 +89,6 @@ class Localidad(Base):
 
 		return self.estado_cielo
 
-	'''TODO: AQUI'''
 	def obtener_viento(self, dias):
 		direccion = ''
 		velocidad = ''
