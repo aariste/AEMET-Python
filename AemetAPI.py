@@ -1,18 +1,17 @@
+# -*- coding: UTF-8-*-
 from xml.etree.ElementTree import parse
-from xml.etree.ElementTree import XMLParser
-import urllib
+from urllib import urlopen
 import datetime
-import codecs
 
 class Base:
 
 	def __init__(self, url):
 		self.rss = ''
+		self.fecha = ''
 		self.__url = url		
 		self.__fecha_de_actualizacion = ''
 		self.__localidad = ''
 		self.__provincia = ''
-
 		self.precipitacion = []
 		self.cota_nieve = []
 		self.estado_cielo = []
@@ -32,16 +31,16 @@ class Base:
 		self.__load_xml()
 
 	def __load_xml(self):
-		self.rss = parse(urllib.urlopen(self.__url)).getroot()
+		self.rss = parse(urlopen(self.__url)).getroot()
 
 		self.__load_datos_base()
 
 	def __load_datos_base(self):
-		self.__fecha_de_actualizacion = self.rss.find('elaborado').text
-		self.__localidad = self.rss.find('nombre').text.encode('latin_1')
-		self.__provincia = self.rss.find('provincia').text
+		self.__fecha_de_actualizacion = self.rss.find('elaborado').text.encode('UTF-8')
+		self.__localidad = self.rss.find('nombre').text.encode('UTF-8')
+		self.__provincia = self.rss.find('provincia').text.encode('UTF-8')
 
-	'''Parte publica'''
+	'''Interfaz publica'''
 	def get_fecha_actualizacion(self):
 		return self.__fecha_de_actualizacion
 
@@ -98,12 +97,15 @@ class Base:
 
 class Localidad(Base):
 
+	'''Fecha en formato dd/mm/AAAA'''
 	def __init__(self, codigo_postal, fecha):
 		url = 'http://www.aemet.es/xml/municipios/localidad_' + codigo_postal + '.xml'
-		Base.__init__(self, url)		
-		self.__load_datos(fecha)
+		Base.__init__(self, url)
+		self.fecha = datetime.datetime.strptime(fecha, '%d/%m/%Y').strftime('%Y-%m-%d')
+		self.__load_datos(self.fecha)
 
-	def __load_datos(self, fecha):
+	'''Carga de los datos del XML para el dia seleccionado'''
+	def __load_datos(self, fecha):		
 		nodo = self.rss.find("prediccion/dia[@fecha='" + fecha + "']")
 
 		'''Probabilidad de precipitacion'''
@@ -119,45 +121,33 @@ class Localidad(Base):
 			self.estado_cielo.append([elem.get('periodo'), elem.get('descripcion')])
 
 		'''Viento'''
-		for elem in nodo.findall('viento'):					
+		for elem in nodo.findall('viento'):
 			self.viento.append([elem.get('periodo'), elem.find('direccion').text, elem.find('velocidad').text])
 
 		'''Racha maxima'''
 		for elem in nodo.findall('racha_max'):
 			self.racha.append([elem.get('periodo'), elem.text])
 
-		'''Temperatura'''
-		temperatura_maxima = nodo.find('temperatura/maxima')
-		temperatura_minima = nodo.find('temperatura/minima')
+		'''Temperaturas'''
+		self.temperatura_maxima = nodo.find('temperatura/maxima').text
+		self.temperatura_minima = nodo.find('temperatura/minima').text
 
 		for elem in nodo.findall('temperatura/dato'):
 			self.temperatura_horas.append([elem.get('hora'), elem.text])
 
 		'''Sensacion termica'''
-		sensacion_termica_maxima = nodo.find('sens_termica/maxima')
-		sensacion_termica_minima = nodo.find('sens_termica/minima')
+		self.sensacion_termica_maxima = nodo.find('sens_termica/maxima').text
+		self.sensacion_termica_minima = nodo.find('sens_termica/minima').text
 
 		for elem in nodo.findall('sens_termica/dato'):
 			self.sensacion_termica.append([elem.get('hora'), elem.text])
 
 		'''Humedad'''
-		humedad_maxima = nodo.find('humedad_relativa/maxima')
-		humedad_minima = nodo.find('humedad_relativa/minima')
+		self.humedad_maxima = nodo.find('humedad_relativa/maxima').text
+		self.humedad_minima = nodo.find('humedad_relativa/minima').text
 
 		for elem in nodo.findall('humedad_relativa/dato'):
 			self.humedad.append([elem.get('hora'), elem.text])
 
-		self.uv_max = nodo.find('uv_max').text		
-	
-	def __obtener_primer_dia(self):
-		dia = self.rss.find("prediccion/dia")
-		return dia.get('fecha')	
-
-class Helper:
-	def __init__(self):
-		self.__data = ''
-
-	@staticmethod
-	def anadir_dias(self, fecha, dias):
-		fecha = datetime.datetime.strptime(fecha, '%Y-%m-%d') + datetime.timedelta(days=dias)
-		return fecha.strftime('%Y-%m-%d')
+		'''U.V. Maximo'''
+		self.uv_max = nodo.find('uv_max').text
