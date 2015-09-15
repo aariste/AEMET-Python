@@ -18,7 +18,7 @@ setup(name = "AEMET",
 
     license = "",
 
-    package_dir = {'AEMET': 'src/'},
-    packages = ['AEMET'],
+    package_dir = {'': 'src/'},
+    packages = [''],
 )
 
