@@ -1,6 +1,10 @@
 # -*- coding: UTF-8-*-
+import sys
 from xml.etree.ElementTree import parse
-from urllib import urlopen
+if sys.version_info.major > 2:
+	from urllib.request import urlopen
+else:
+	from urllib import urlopen
 import datetime
 
 class Base:
